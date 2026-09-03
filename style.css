@@ -15,6 +15,21 @@ body {
   max-width: 640px;
 }
 
+@media (max-width: 939px) {
+  .layout {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .col-side {
+    order: 1;
+  }
+
+  .col-main {
+    order: 2;
+  }
+}
+
 @media (min-width: 940px) {
   .layout {
     display: grid;

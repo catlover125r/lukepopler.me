@@ -74,7 +74,7 @@ body {
 
 .photo {
   width: 100%;
-  max-width: 336px;
+  max-width: 269px;
   aspect-ratio: 3 / 4;
   object-fit: cover;
   object-position: 50% 22%;

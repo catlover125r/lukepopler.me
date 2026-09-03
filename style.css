@@ -1,5 +1,5 @@
 body {
-  margin: 40px 0;
+  margin: 72px 0 40px;
   font-family: Georgia, "Times New Roman", Times, serif;
   color: #000;
   background: #fff;
@@ -30,8 +30,8 @@ body {
 
 .photo {
   width: 100%;
-  max-width: 420px;
-  height: 460px;
+  max-width: 336px;
+  height: 368px;
   object-fit: cover;
   object-position: 50% 22%;
   display: block;
@@ -47,10 +47,6 @@ h2 {
   font-size: 1.1em;
   margin-top: 32px;
   margin-bottom: 4px;
-}
-
-.col-side h2:first-child {
-  margin-top: 0;
 }
 
 hr {

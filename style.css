@@ -1,10 +1,40 @@
 body {
-  max-width: 640px;
-  margin: 40px auto;
-  padding: 0 20px;
+  margin: 40px 0;
   font-family: Georgia, "Times New Roman", Times, serif;
   color: #000;
   background: #fff;
+}
+
+.layout {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.col-main {
+  max-width: 640px;
+}
+
+@media (min-width: 940px) {
+  .layout {
+    display: grid;
+    grid-template-columns: 640px 640px;
+    gap: 40px;
+    align-items: start;
+  }
+
+  .col-main {
+    max-width: none;
+  }
+}
+
+.photo {
+  width: 220px;
+  height: 280px;
+  object-fit: cover;
+  object-position: 50% 22%;
+  display: block;
+  margin-bottom: 16px;
 }
 
 h1 {
@@ -16,6 +46,10 @@ h2 {
   font-size: 1.1em;
   margin-top: 32px;
   margin-bottom: 4px;
+}
+
+.col-side h2:first-child {
+  margin-top: 0;
 }
 
 hr {

@@ -29,8 +29,9 @@ body {
 }
 
 .photo {
-  width: 220px;
-  height: 280px;
+  width: 100%;
+  max-width: 420px;
+  height: 460px;
   object-fit: cover;
   object-position: 50% 22%;
   display: block;
@@ -38,7 +39,7 @@ body {
 }
 
 h1 {
-  font-size: 1.8em;
+  font-size: 3em;
   margin-bottom: 4px;
 }
 

@@ -74,6 +74,15 @@ hr {
   font-size: 0.95em;
 }
 
+ul {
+  margin: 0;
+  padding-left: 22px;
+}
+
+li {
+  margin-bottom: 10px;
+}
+
 a {
   color: #000;
 }

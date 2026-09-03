@@ -1,0 +1,1543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RunScore</title>
+  <link rel="icon" type="image/png" href="logo-lightmode.png" media="(prefers-color-scheme: light)">
+  <link rel="icon" type="image/png" href="logo-darkmode.png" media="(prefers-color-scheme: dark)">
+  <meta name="description" content="A county-level index measuring running activity and infrastructure across all 3,143 U.S. counties.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,300;1,6..72,400;1,6..72,500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+
+  <style>
+    /* ─── Reset ─── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    /* ─── Tokens ─── */
+    :root {
+      --bg:        #ffffff;
+      --ink:       #1c1c1c;
+      --ink-2:     #555;
+      --ink-3:     #999;
+      --ink-4:     #bbb;
+      --rule:      #ebebeb;
+      --rule-soft: #f4f4f4;
+      --radius:    10px;
+      --gap:       10px;
+      --max:       1120px;
+      --pad:       28px;
+    }
+
+    /* ─── Base ─── */
+    html, body {
+      overflow-x: hidden;
+    }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      font-size: 13.5px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { text-decoration: none; color: inherit; }
+
+    /* ─── Nav ─── */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: rgba(255,255,255,0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--rule);
+      transition: transform .3s ease;
+    }
+    nav.nav-hidden {
+      transform: translateY(-100%);
+    }
+    .nav-spacer {
+      height: 46px;
+    }
+
+    .nav-inner {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 var(--pad);
+      height: 46px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .nav-left, .nav-right {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    nav a {
+      font-size: 12px;
+      color: var(--ink-3);
+      transition: color .18s;
+      cursor: pointer;
+    }
+
+    nav a:hover { color: var(--ink); }
+
+    /* ─── Nav dropdown ─── */
+    .nav-dropdown {
+      position: relative;
+    }
+    .nav-dropdown > a {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .nav-dropdown > a::after {
+      content: '';
+      display: inline-block;
+      width: 5px;
+      height: 5px;
+      border-right: 1.5px solid currentColor;
+      border-bottom: 1.5px solid currentColor;
+      transform: rotate(45deg) translateY(-1px);
+      transition: transform .18s;
+    }
+    .nav-dropdown:hover > a::after {
+      transform: rotate(225deg) translateY(-1px);
+    }
+    .dropdown-menu {
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      padding-top: 6px;
+      min-width: 160px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .18s, transform .18s;
+      z-index: 200;
+    }
+    .dropdown-menu-inner {
+      background: rgba(255,255,255,0.97);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      padding: 6px 0;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+      transform: translateY(-4px);
+      transition: transform .18s;
+    }
+    .nav-dropdown:hover .dropdown-menu {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .nav-dropdown:hover .dropdown-menu-inner {
+      transform: translateY(0);
+    }
+    .dropdown-menu a {
+      display: block;
+      padding: 7px 16px;
+      font-size: 12px;
+      color: var(--ink-2);
+      white-space: nowrap;
+    }
+    .dropdown-menu a:hover {
+      color: var(--ink);
+      background: var(--rule-soft);
+    }
+
+    .nav-brand {
+      color: var(--ink) !important;
+      font-weight: 500;
+    }
+
+    /* ─── Page wrapper ─── */
+    .page {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 var(--pad) 0;
+    }
+
+    /* ─── Section spacing ─── */
+    section {
+      padding: 40px 0 0;
+    }
+
+    /* ─── Hero ─── */
+    .hero {
+      padding: 52px 0 40px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+      align-items: stretch;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .hero-left {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+
+    .hero-wordmark {
+      font-family: 'Newsreader', Georgia, serif;
+      font-size: 64px;
+      font-weight: 300;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+    }
+
+    .hero-sub {
+      font-size: 12px;
+      color: var(--ink-3);
+      line-height: 1.8;
+    }
+
+    .hero-sub strong {
+      font-weight: 500;
+      color: var(--ink-2);
+    }
+
+    .score-pill {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--rule);
+      border-radius: 99px;
+      padding: 5px 14px;
+      font-size: 11px;
+      color: var(--ink-2);
+      width: fit-content;
+    }
+
+    /* ─── Hero intro text ─── */
+    .hero-right {
+      align-self: end;
+    }
+
+    .intro-text {
+      font-family: 'Newsreader', Georgia, serif;
+      font-size: 18px;
+      font-weight: 400;
+      line-height: 1.75;
+      color: var(--ink);
+    }
+
+    .intro-text p + p {
+      margin-top: 20px;
+    }
+
+    .intro-text strong {
+      font-weight: 600;
+    }
+
+    .intro-text em {
+      font-style: italic;
+    }
+
+    /* ─── Feature rows (50/50 alternating) ─── */
+    .feature {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--gap);
+      align-items: stretch;
+    }
+
+    .feature.flip .feat-img  { order: 2; }
+    .feature.flip .feat-card { order: 1; }
+
+    .feat-img {
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform .28s cubic-bezier(.22,.68,0,1.2), box-shadow .28s ease, border-color .2s;
+    }
+
+    .feat-img:hover {
+      transform: scale(1.018);
+      box-shadow: 0 10px 36px rgba(0,0,0,0.10);
+      border-color: #ccc;
+    }
+
+    .feat-img img {
+      width: 100%;
+      height: auto;
+      object-fit: contain;
+      display: block;
+    }
+
+    /* ─── Cards ─── */
+    .card {
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      background: var(--bg);
+      overflow: hidden;
+      transition: border-color .2s;
+    }
+
+    .card:hover { border-color: #d0d0d0; }
+
+    .card-label {
+      padding: 13px 16px 0;
+      font-size: 10.5px;
+      color: var(--ink-3);
+      letter-spacing: 0.03em;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-body {
+      padding: 12px 16px 18px;
+    }
+
+    .card-title {
+      font-family: 'Newsreader', Georgia, serif;
+      font-size: 16px;
+      font-weight: 500;
+      line-height: 1.35;
+      color: var(--ink);
+      margin-bottom: 8px;
+    }
+
+    .card-text {
+      font-size: 13px;
+      color: var(--ink-2);
+      line-height: 1.7;
+    }
+
+    .card-text + .card-text {
+      margin-top: 10px;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--rule-soft);
+      margin: 12px 0;
+    }
+
+    /* ─── Stat cards ─── */
+    .stat-row {
+      display: grid;
+      gap: var(--gap);
+    }
+    .stat-row.c2 { grid-template-columns: repeat(2, 1fr); }
+    .stat-row.c3 { grid-template-columns: repeat(3, 1fr); }
+    .stat-row.c4 { grid-template-columns: repeat(4, 1fr); }
+
+    .stat-body {
+      padding: 16px 16px 18px;
+    }
+
+    .stat-num {
+      font-family: 'Newsreader', Georgia, serif;
+      font-size: 38px;
+      font-weight: 400;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+
+    .stat-note {
+      font-size: 11.5px;
+      color: var(--ink-3);
+      line-height: 1.55;
+    }
+
+    /* ─── Badges ─── */
+    .badge {
+      display: inline-block;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 2px 8px 2.5px;
+      border-radius: 99px;
+      margin-bottom: 9px;
+    }
+
+    .b-blue   { background: #e4f3e8; color: #1a7335; }
+    .b-green  { background: #e4f3e8; color: #1a7335; }
+    .b-orange { background: #dff2e4; color: #166530; }
+    .b-red    { background: #e8f5e9; color: #2e7d45; }
+    .b-purple { background: #e0f0e6; color: #1b5e3a; }
+    .b-gray   { background: #f1f3f4; color: #555; }
+    .b-teal   { background: #d6ede0; color: #145230; }
+
+    /* ─── Card tints — all in green family ─── */
+    .bg-sage   { background: #f7fbf6; border-color: #daecd6; }
+    .bg-sky    { background: #e0f0de; border-color: #a8cda4; }
+    .bg-cream  { background: #f5faf3; border-color: #c8ddc4; }
+    .bg-blush  { background: #d4ead1; border-color: #8cbc87; }
+
+    /* ─── Correlation table ─── */
+    .corr-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0 20px;
+    }
+
+    .corr-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6.5px 0;
+      border-bottom: 1px solid var(--rule-soft);
+      font-size: 12.5px;
+    }
+
+    .corr-row:last-child { border-bottom: none; }
+    .corr-label { color: #444; }
+    .corr-pos { color: #1a7335; font-weight: 500; }
+    .corr-neg { color: #b71c1c; font-weight: 500; }
+
+    /* ─── County rows ─── */
+    .county-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 7.5px 0;
+      border-bottom: 1px solid var(--rule-soft);
+    }
+
+    .county-row:last-child { border-bottom: none; }
+    .county-name { font-size: 12.5px; font-weight: 500; color: var(--ink); }
+    .county-sub  { font-size: 10.5px; color: var(--ink-4); margin-top: 1px; }
+
+    .score-wrap { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+    .score-track {
+      width: 54px; height: 3px;
+      background: var(--rule-soft);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .score-fill { height: 100%; background: var(--ink); border-radius: 2px; }
+    .score-val  { font-size: 10.5px; color: var(--ink-3); min-width: 28px; text-align: right; }
+
+    /* ─── Component list ─── */
+    .comp-list { list-style: none; }
+
+    .comp-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--rule-soft);
+    }
+
+    .comp-item:last-child { border-bottom: none; }
+    .comp-name { font-size: 12.5px; font-weight: 500; color: var(--ink); margin-bottom: 2px; }
+    .comp-desc { font-size: 11.5px; color: var(--ink-3); line-height: 1.5; }
+    .comp-src  { font-size: 10.5px; color: var(--ink-4); text-align: right; white-space: nowrap; flex-shrink: 0; padding-top: 1px; }
+
+    /* ─── Pull quote ─── */
+    .pull-quote {
+      font-family: 'Newsreader', Georgia, serif;
+      font-size: 15px;
+      font-style: italic;
+      line-height: 1.7;
+      color: #444;
+    }
+
+    /* ─── Chart compare title ─── */
+    .chart-compare {
+      font-family: 'Newsreader', Georgia, serif;
+      font-size: 32px;
+      font-weight: 400;
+      line-height: 1.15;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+
+    .chart-stat-label {
+      font-size: 10.5px;
+      color: var(--ink-3);
+      letter-spacing: 0.03em;
+      margin-bottom: 14px;
+    }
+
+    /* ─── Tag row ─── */
+    .tag-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 14px; }
+
+    /* ─── Lightbox ─── */
+    .lb-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      background: rgba(20, 20, 20, 0.35);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      align-items: center;
+      justify-content: center;
+      padding: 32px;
+      opacity: 0;
+      transition: opacity .22s ease;
+    }
+
+    .lb-overlay.open {
+      display: flex;
+      opacity: 0;
+    }
+
+    .lb-overlay.visible {
+      opacity: 1;
+    }
+
+    .lb-panel {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      background: #fff;
+      border-radius: 14px;
+      overflow: hidden;
+      max-width: min(92vw, 1080px);
+      max-height: 88vh;
+      box-shadow: 0 32px 96px rgba(0,0,0,0.22);
+      transform: scale(.96);
+      transition: transform .25s cubic-bezier(.22,.68,0,1.1);
+    }
+
+    .lb-overlay.visible .lb-panel {
+      transform: scale(1);
+    }
+
+    .lb-img-wrap {
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      min-height: 300px;
+    }
+
+    .lb-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .lb-side {
+      border-left: 1px solid var(--rule);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .lb-side-inner {
+      padding: 28px 24px;
+      flex: 1;
+    }
+
+    .lb-close {
+      position: absolute;
+      top: 16px;
+      right: 20px;
+      background: none;
+      border: none;
+      font-size: 22px;
+      color: var(--ink-3);
+      cursor: pointer;
+      line-height: 1;
+      padding: 4px;
+      transition: color .15s;
+    }
+
+    .lb-close:hover { color: var(--ink); }
+
+    .lb-lbl {
+      font-size: 10.5px;
+      color: var(--ink-3);
+      letter-spacing: 0.03em;
+      margin-bottom: 10px;
+    }
+
+    /* Ensure relative positioning on overlay for close btn */
+    .lb-overlay { position: fixed; }
+
+    /* ─── Regression mini-table ─── */
+    .reg-table {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--rule);
+      border-radius: 7px;
+      overflow: hidden;
+      font-size: 11.5px;
+      margin: 12px 0;
+    }
+
+    .reg-cell {
+      padding: 9px 12px;
+      border-right: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .reg-cell:nth-child(3n) { border-right: none; }
+    .reg-cell:nth-last-child(-n+3) { border-bottom: none; }
+
+    .reg-head { background: var(--rule-soft); font-weight: 500; color: var(--ink-2); }
+    .reg-highlight { color: #1a7335; font-weight: 500; }
+
+    /* ─── Footer ─── */
+    footer {
+      border-top: 1px solid var(--rule);
+      margin-top: 60px;
+      padding: 40px 0;
+    }
+
+    .footer-inner {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 var(--pad);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+    }
+
+    .footer-col h4 {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--ink-2);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .footer-col p, .footer-col address {
+      font-size: 12px;
+      color: var(--ink-3);
+      line-height: 1.85;
+      font-style: normal;
+    }
+
+    .footer-base {
+      max-width: var(--max);
+      margin: 28px auto 0;
+      padding: 20px var(--pad) 0;
+      border-top: 1px solid var(--rule-soft);
+      font-size: 11px;
+      color: var(--ink-4);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* ─── Method layout ─── */
+    .method-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: start;
+      padding: 8px 0 0;
+      border-top: 1px solid var(--rule);
+    }
+
+    .method-left {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .method-right {
+      padding-top: 6px;
+    }
+
+    /* ─── Scroll reveal ─── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(32px);
+      transition: opacity 0.6s cubic-bezier(.22,.68,0,1), transform 0.6s cubic-bezier(.22,.68,0,1);
+      will-change: opacity, transform;
+      -webkit-transform: translateY(32px);
+      -webkit-transition: opacity 0.6s cubic-bezier(.22,.68,0,1), -webkit-transform 0.6s cubic-bezier(.22,.68,0,1);
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+      -webkit-transform: translateY(0);
+    }
+
+    /* ─── Card detail (hidden on page, visible in lightbox) ─── */
+    .card-detail { display: none; }
+    #lb-content .card-detail { display: contents; }
+
+    /* ─── Scrollbar ─── */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #ddd; border-radius: 3px; }
+
+    /* ─── Hamburger button ─── */
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 5px;
+      width: 36px;
+      height: 36px;
+      flex-shrink: 0;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+    }
+    .hamburger span {
+      display: block;
+      width: 20px;
+      height: 2px;
+      background: #1c1c1c;
+      border-radius: 2px;
+      transition: transform .25s, opacity .25s;
+    }
+    .hamburger.open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+
+    /* ─── Sidebar overlay ─── */
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.25);
+      z-index: 300;
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+    }
+    .sidebar-overlay.open { display: block; }
+
+    /* ─── Sidebar ─── */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 240px;
+      height: 100dvh;
+      background: #fff;
+      z-index: 400;
+      display: flex;
+      flex-direction: column;
+      padding: 56px 0 32px;
+      transform: translateX(100%);
+      transition: transform .3s cubic-bezier(.22,.68,0,1);
+      box-shadow: -8px 0 32px rgba(0,0,0,0.08);
+    }
+    .sidebar.open { transform: translateX(0); }
+
+    .sidebar a {
+      font-size: 14px;
+      color: var(--ink-2);
+      padding: 13px 28px;
+      border-bottom: 1px solid var(--rule);
+      transition: color .15s, background .15s;
+    }
+    .sidebar a:hover { color: var(--ink); background: var(--rule-soft); }
+    .sidebar .sidebar-brand {
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--ink) !important;
+      padding: 0 28px 20px;
+      border-bottom: 2px solid var(--rule);
+      margin-bottom: 4px;
+    }
+    .sidebar-dropdown-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 14px;
+      color: var(--ink-2);
+      padding: 13px 28px;
+      border-bottom: 1px solid var(--rule);
+      cursor: pointer;
+      transition: color .15s, background .15s;
+    }
+    .sidebar-dropdown-toggle:hover { color: var(--ink); background: var(--rule-soft); }
+    .sidebar-dropdown-toggle::after {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-right: 1.5px solid var(--ink-3);
+      border-bottom: 1.5px solid var(--ink-3);
+      transform: rotate(45deg);
+      transition: transform .25s;
+      flex-shrink: 0;
+    }
+    .sidebar-dropdown-toggle.open::after {
+      transform: rotate(225deg);
+    }
+    .sidebar-dropdown-items {
+      display: flex;
+      flex-direction: column;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height .3s ease;
+    }
+    .sidebar-dropdown-items.open {
+      max-height: 300px;
+    }
+    .sidebar .sidebar-sub {
+      padding-left: 40px;
+      font-size: 13px;
+      color: var(--ink-3);
+      border-bottom: 1px solid var(--rule);
+    }
+    .sidebar .sidebar-sub:hover { color: var(--ink-2); background: var(--rule-soft); }
+    .sidebar-divider {
+      border: none;
+      border-top: 1px solid var(--rule);
+      margin: 8px 0;
+    }
+    .sidebar-actions {
+      margin-top: auto;
+      padding: 0 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .sidebar-actions a {
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      text-align: center;
+      padding: 10px;
+      font-size: 13px;
+      color: var(--ink-2) !important;
+      background: var(--rule-soft);
+    }
+
+    /* ─── Mobile ─── */
+    @media (max-width: 700px) {
+      :root { --pad: 16px; --gap: 8px; }
+
+      .nav-inner { height: 42px; justify-content: space-between; }
+      .nav-spacer { height: 42px; }
+      nav a { font-size: 11px; }
+
+      .hero {
+        grid-template-columns: 1fr;
+        padding-top: 28px;
+      }
+      .hero-right { align-self: auto; margin-top: 4px; }
+      .hero-wordmark { font-size: 52px; }
+
+      .feature,
+      .feature.flip {
+        grid-template-columns: 1fr;
+      }
+      .feature .feat-img,
+      .feature .card { order: unset !important; }
+      .feature.flip .feat-img { order: 1 !important; }
+      .feature.flip .card    { order: 2 !important; }
+
+      .feat-img img { max-height: 260px; }
+
+      .stat-row.c2,
+      .stat-row.c3 { grid-template-columns: 1fr; }
+
+      .method-layout { grid-template-columns: 1fr; gap: 32px; }
+
+      .hero-wordmark { font-size: 48px; }
+
+      .lb-wrap { flex-direction: column; max-width: 96vw; max-height: 92vh; }
+      .lb-img-wrap { flex: none; width: 100%; max-height: 55vh; }
+      .lb-card { width: 100%; max-height: 35vh; overflow-y: auto; }
+
+      .nav-left .nav-links,
+      .nav-right { display: none; }
+      .hamburger { display: flex; }
+      .nav-brand {
+        font-family: 'Newsreader', Georgia, serif;
+        font-size: 20px;
+        letter-spacing: -0.01em;
+      }
+    }
+
+  </style>
+</head>
+<body>
+
+<!-- ─── Sidebar overlay ─── -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- ─── Sidebar ─── -->
+<div class="sidebar" id="sidebar">
+  <a class="sidebar-brand" href="#" onclick="closeSidebar()"><img src="logo-lightmode.png" alt="RunScore" style="height:32px;width:auto;display:block;"></a>
+  <a href="#geography" onclick="closeSidebar()">Geography</a>
+  <div class="sidebar-dropdown-toggle" id="sidebarHealthToggle">Health</div>
+  <div class="sidebar-dropdown-items" id="sidebarHealthItems">
+    <a class="sidebar-sub" href="#health" onclick="closeSidebar()">Overview</a>
+    <a class="sidebar-sub" href="#health-obesity" onclick="closeSidebar()">Obesity Rate</a>
+    <a class="sidebar-sub" href="#health-diabetes" onclick="closeSidebar()">Diabetes Rate</a>
+    <a class="sidebar-sub" href="#health-lifeexp" onclick="closeSidebar()">Life Expectancy</a>
+    <a class="sidebar-sub" href="#health-fairpoor" onclick="closeSidebar()">Fair / Poor Health</a>
+  </div>
+  <a href="#realestate" onclick="closeSidebar()">Real Estate</a>
+  <a href="#communities" onclick="closeSidebar()">Communities</a>
+  <a href="#method" onclick="closeSidebar()">Method</a>
+  <div class="sidebar-actions">
+    <a href="RunScore_Paper_Popler_2026.pdf" target="_blank">Paper ↗</a>
+    <a href="data/processed/master_county.csv" download="RunScore_county_data.csv">Data ↓</a>
+  </div>
+</div>
+
+<!-- ─── Nav ─── -->
+<div class="nav-spacer"></div>
+<nav>
+  <div class="nav-inner">
+    <div class="nav-left">
+      <a class="nav-brand" href="#"><img src="logo-lightmode.png" alt="RunScore" style="height:28px;width:auto;display:block;"></a>
+      <div class="nav-links">
+        <a href="#geography">Geography</a>
+        <div class="nav-dropdown">
+          <a href="#health">Health</a>
+          <div class="dropdown-menu">
+            <div class="dropdown-menu-inner">
+              <a href="#health-obesity">Obesity Rate</a>
+              <a href="#health-diabetes">Diabetes Rate</a>
+              <a href="#health-lifeexp">Life Expectancy</a>
+              <a href="#health-fairpoor">Fair / Poor Health</a>
+            </div>
+          </div>
+        </div>
+        <a href="#realestate">Real Estate</a>
+        <a href="#communities">Communities</a>
+        <a href="#method">Method</a>
+      </div>
+    </div>
+    <div class="nav-right">
+      <a href="RunScore_Paper_Popler_2026.pdf" target="_blank">Paper ↗</a>
+      <a href="data/processed/master_county.csv" download="RunScore_county_data.csv">Data ↓</a>
+    </div>
+    <button class="hamburger" id="hamburger" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<div class="page">
+
+  <!-- ─── Hero ─── -->
+  <div class="hero">
+    <div class="hero-left">
+      <div class="hero-wordmark">RunScore</div>
+      <div class="score-pill">
+        All 3,143 U.S. counties ranked
+      </div>
+      <div class="hero-sub">
+        A county-level index of running culture and physical activity infrastructure.<br>
+        <strong>Luke Popler</strong> · Sequoia High School · April 2026
+      </div>
+      <div class="intro-text" style="margin-top:20px;">
+        <p>
+          A score from 0 to 100 for every U.S. county — measuring <strong>running culture</strong>: races, activity levels, walkability, and fitness infrastructure.
+        </p>
+      </div>
+    </div>
+
+    <div class="hero-right">
+      <div class="intro-text">
+        <p>
+          Communities that run live longer, stay healthier, and hold their home values better. A 10-point RunScore advantage predicts <strong>$7,885 more in median home value</strong>, even after controlling for income.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Geography: map LEFT, text RIGHT ─── -->
+  <section id="geography">
+    <div class="feature">
+      <div class="feat-img">
+        <img src="figures/fig4_runscore_map.png" alt="RunScore National Map">
+      </div>
+      <div class="card">
+        <div class="card-label">Geography · National Distribution</div>
+        <div class="card-body">
+          <div class="card-title">Running culture has a geography — and it is not random</div>
+          <div class="card-text">High-RunScore counties cluster in the <strong style="font-weight:500;color:var(--ink);">Northeast</strong>, <strong style="font-weight:500;color:var(--ink);">Mountain West</strong>, and Pacific Northwest. Low-RunScore counties concentrate in the rural Deep South and Great Plains.</div>
+          <div class="card-detail">
+          <hr class="divider">
+          <div class="card-text">Physical inactivity in the lowest-RunScore counties often exceeds 45–60%. Zero organized races. Near-zero walkability.</div>
+          <hr class="divider">
+          <div class="card-text">Every county gets a score from 0 to 100. A score of 50 is exactly average. The map makes the pattern impossible to miss — running culture isn't spread evenly. It clusters. It has neighbors.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stat cards -->
+    <div class="stat-row c3" style="margin-top:var(--gap);">
+      <div class="card">
+        <div class="card-label">Coverage</div>
+        <div class="stat-body">
+          <div class="badge b-teal">FULL NATIONAL</div>
+          <div class="stat-num">3,143</div>
+          <div class="stat-note">U.S. counties scored<br>all 50 states · all urbanicity levels</div>
+        </div>
+      </div>
+      <div class="card bg-sage">
+        <div class="card-label">Home Values</div>
+        <div class="stat-body">
+          <div class="badge b-green">STRONG LINK</div>
+          <div class="stat-num">+$7,885</div>
+          <div class="stat-note">extra home value per 10-point RunScore gain<br>even after accounting for income</div>
+        </div>
+      </div>
+      <div class="card bg-blush">
+        <div class="card-label">Diabetes</div>
+        <div class="stat-body">
+          <div class="badge b-red">STRONG LINK</div>
+          <div class="stat-num">−1.5 pts</div>
+          <div class="stat-note">fewer adults with diabetes per 50-point RunScore gain<br>the strongest health signal in the study</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Health: 4 individual charts ─── -->
+  <section id="health">
+
+    <!-- 1 · Obesity — chart LEFT, text RIGHT -->
+    <div class="feature" id="health-obesity">
+      <div class="feat-img">
+        <img src="figures/fig_health_obesity.png" alt="RunScore vs. Obesity Rate">
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="chart-compare">Obesity Rate</div>
+          <div class="chart-stat-label">Health &nbsp;·&nbsp; Spearman r = −0.570 &nbsp;·&nbsp; p &lt; 0.001</div>
+          <div class="card-title" style="font-size:13px;font-weight:400;color:var(--ink-2);margin-bottom:10px;">Higher RunScore communities carry less obesity</div>
+          <div class="card-text">High-RunScore counties consistently have lower obesity — even at the same income level.</div>
+          <div class="card-detail">
+          <hr class="divider">
+          <div class="card-text">About 42% of American adults are obese, but that number isn't the same everywhere. In a county of 25,000 adults, moving from a low to a high RunScore is associated with roughly <strong style="font-weight:500;color:var(--ink);">675 fewer people with obesity</strong>.</div>
+          <hr class="divider">
+          <div class="card-text">Wealth isn't the whole story. RunScore picks up something money alone doesn't buy: a culture where moving is normal, infrastructure exists, and neighbors set the pace.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2 · Diabetes — text LEFT, chart RIGHT -->
+    <div class="feature flip" id="health-diabetes" style="margin-top:var(--gap);">
+      <div class="feat-img">
+        <img src="figures/fig_health_diabetes.png" alt="RunScore vs. Diabetes Rate">
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="chart-compare">Diabetes Rate</div>
+          <div class="chart-stat-label">Health &nbsp;·&nbsp; Spearman r = −0.676 &nbsp;·&nbsp; p &lt; 0.001</div>
+          <div class="card-title" style="font-size:13px;font-weight:400;color:var(--ink-2);margin-bottom:10px;">The strongest health signal in the study</div>
+          <div class="card-text">The strongest health signal in this study. <strong style="font-weight:500;color:var(--ink);">1 in 5</strong> adults in the lowest-RunScore counties has diabetes. In Jackson Hole — <strong style="font-weight:500;color:var(--ink);">1 in 11</strong>.</div>
+          <div class="card-detail">
+          <hr class="divider">
+          <div class="card-text">Of all health outcomes studied, diabetes tracks most closely with RunScore — because diabetes is deeply tied to inactivity, and running culture directly measures how active a community actually is.</div>
+          <hr class="divider">
+          <div class="card-text">The gap shows up at every income level. Rich counties with low RunScores still have worse diabetes outcomes than middle-income counties with high RunScores.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3 · Life Expectancy — chart LEFT, text RIGHT -->
+    <div class="feature" id="health-lifeexp" style="margin-top:var(--gap);">
+      <div class="feat-img">
+        <img src="figures/fig_health_lifeexp.png" alt="RunScore vs. Life Expectancy">
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="chart-compare">Life Expectancy</div>
+          <div class="chart-stat-label">Health &nbsp;·&nbsp; Spearman r = +0.582 &nbsp;·&nbsp; p &lt; 0.001</div>
+          <div class="card-title" style="font-size:13px;font-weight:400;color:var(--ink-2);margin-bottom:10px;">People live longer in high-RunScore counties</div>
+          <div class="card-text">Teton County, WY: <strong style="font-weight:500;color:var(--ink);">87.6 years</strong>. Oglala Lakota, SD: <strong style="font-weight:500;color:var(--ink);">56.9 years</strong>. A 30-year gap — visible in a single number.</div>
+          <div class="card-detail">
+          <hr class="divider">
+          <div class="card-text">Life expectancy is the bottom line — how long do people actually live here? High-RunScore counties consistently come out ahead, even after accounting for income and urbanicity.</div>
+          <hr class="divider">
+          <div class="card-text">This 30-year gap is not caused by running. But it is measured by RunScore — and RunScore is a way to see that dimension of community wellbeing at national scale.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4 · Fair/Poor Health — text LEFT, chart RIGHT -->
+    <div class="feature flip" id="health-fairpoor" style="margin-top:var(--gap);">
+      <div class="feat-img">
+        <img src="figures/fig_health_fairpoor.png" alt="RunScore vs. Fair/Poor Health">
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="chart-compare">Fair / Poor Health</div>
+          <div class="chart-stat-label">Health &nbsp;·&nbsp; Spearman r = −0.673 &nbsp;·&nbsp; p &lt; 0.001</div>
+          <div class="card-title" style="font-size:13px;font-weight:400;color:var(--ink-2);margin-bottom:10px;">How communities feel about their own health</div>
+          <div class="card-text">In low-RunScore counties, nearly <strong style="font-weight:500;color:var(--ink);">1 in 3 adults</strong> rates their health as fair or poor. In high-RunScore communities, below 1 in 10.</div>
+          <div class="card-detail">
+          <hr class="divider">
+          <div class="card-text">Self-reported health is one of the most reliable predictors of how long someone will live — sometimes more accurate than lab results. A community where people feel healthy is a community where they actually are.</div>
+          <hr class="divider">
+          <div class="card-text">Buyers choosing a community are implicitly choosing a health culture. RunScore makes that culture visible and comparable across all 3,143 U.S. counties.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ─── Real Estate: text LEFT, chart RIGHT ─── -->
+  <section id="realestate">
+    <div class="feature flip">
+      <div class="feat-img">
+        <img src="figures/fig1_runscore_vs_homevalue.png" alt="RunScore vs. Home Value">
+      </div>
+      <div class="card">
+        <div class="card-label">Findings · Real Estate</div>
+        <div class="card-body">
+          <div class="card-title">Homes are worth more in high-RunScore counties — even when income is the same</div>
+          <div class="card-text">Every 10-point RunScore increase predicts <strong style="font-weight:500;color:var(--ink);">$7,885 more in home value</strong> — even comparing counties at the same income level.</div>
+          <div class="card-detail">
+          <hr class="divider">
+          <div class="card-text">Two counties. Same median income. The one with the higher RunScore has significantly more valuable homes. Go up 50 points — from a car-dependent suburb to a walkable outdoor town — and that gap grows to over <strong style="font-weight:500;color:var(--ink);">$42,000</strong>.</div>
+          <hr class="divider">
+          <div class="card-text">The effect is <em>strongest in rural areas</em> — exactly where real estate platforms have the least lifestyle data. In small towns, RunScore does the most work.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-row c2" style="margin-top:var(--gap);">
+      <div class="card bg-cream">
+        <div class="card-label">5-Year Appreciation Signal</div>
+        <div class="stat-body">
+          <div class="badge b-orange">LEADING INDICATOR</div>
+          <div class="stat-num">+0.9 pts</div>
+          <div class="stat-note">home value growth over 5 years per 10-point RunScore gain<br>Strikingly, income barely predicts appreciation — but RunScore does</div>
+        </div>
+      </div>
+      <div class="card bg-sky">
+        <div class="card-label">Rural Advantage</div>
+        <div class="stat-body">
+          <div class="badge b-blue">NON-METRO COUNTIES</div>
+          <div class="stat-num">+0.37%</div>
+          <div class="stat-note">home value gain per RunScore point in small towns and rural areas<br>vs. cities — RunScore matters most where other lifestyle data runs out</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Communities: text LEFT, chart RIGHT ─── -->
+  <section id="communities">
+    <div class="feature flip">
+      <div class="feat-img">
+        <img src="figures/fig3_deepdive_comparison.png" alt="Community Deep Dive">
+      </div>
+      <div class="card">
+        <div class="card-label">Community Profiles · Deep Dive</div>
+        <div class="card-body">
+          <div class="card-title">The gap between extremes</div>
+          <div class="card-text"><strong style="font-weight:500;color:var(--ink);">Teton County, WY</strong> — RunScore 99.8. Life expectancy 87.6 yrs. Home values $2.1M.</div>
+          <hr class="divider">
+          <div class="card-text"><strong style="font-weight:500;color:var(--ink);">Oglala Lakota, SD</strong> — RunScore 0.2. Life expectancy 56.9 yrs. Zero organized races.</div>
+          <div class="card-detail">
+          <hr class="divider">
+          <div class="card-text">The 30-year gap in life expectancy between these two counties isn't explained by running alone. But running culture is one measurable dimension of what separates them — and RunScore puts a number on it for all 3,143 U.S. counties.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-row c2" style="margin-top:var(--gap);">
+      <div class="card">
+        <div class="card-label">Rankings · Highest RunScore</div>
+        <div class="card-body">
+          <div class="card-title" style="margin-bottom:10px;">Top counties</div>
+          <div class="county-row">
+            <div><div class="county-name">Nantucket, MA</div><div class="county-sub">$3,029,344 · 17.2% inactive</div></div>
+            <div class="score-wrap"><div class="score-track"><div class="score-fill" style="width:100%"></div></div><div class="score-val">99.9</div></div>
+          </div>
+          <div class="county-row">
+            <div><div class="county-name">Teton, WY (Jackson Hole)</div><div class="county-sub">$2,147,757 · +67.5% 5yr</div></div>
+            <div class="score-wrap"><div class="score-track"><div class="score-fill" style="width:99%"></div></div><div class="score-val">99.8</div></div>
+          </div>
+          <div class="county-row">
+            <div><div class="county-name">New York, NY (Manhattan)</div><div class="county-sub">$1,217,413 · 20.4% inactive</div></div>
+            <div class="score-wrap"><div class="score-track"><div class="score-fill" style="width:99%"></div></div><div class="score-val">99.8</div></div>
+          </div>
+          <div class="county-row">
+            <div><div class="county-name">Gallatin, MT (Bozeman)</div><div class="county-sub">$689,955 · +31.8% 5yr</div></div>
+            <div class="score-wrap"><div class="score-track"><div class="score-fill" style="width:99%"></div></div><div class="score-val">99.5</div></div>
+          </div>
+          <div class="county-row">
+            <div><div class="county-name">Missoula, MT</div><div class="county-sub">$559,508 · income $72k</div></div>
+            <div class="score-wrap"><div class="score-track"><div class="score-fill" style="width:99%"></div></div><div class="score-val">99.5</div></div>
+          </div>
+          <div class="county-row">
+            <div><div class="county-name">King, WA (Seattle)</div><div class="county-sub">13.9% inactive · 6.5 races/100k</div></div>
+            <div class="score-wrap"><div class="score-track"><div class="score-fill" style="width:99%"></div></div><div class="score-val">99.5</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-label">Rankings · Lowest RunScore</div>
+        <div class="card-body">
+          <div class="card-title" style="margin-bottom:10px;">Bottom counties</div>
+          <div class="county-row">
+            <div><div class="county-name">Greene, AL</div><div class="county-sub">44.7% inactive · 0 races</div></div>
+            <div class="score-wrap"><div class="score-track"><div class="score-fill" style="width:0%"></div></div><div class="score-val">0.0</div></div>
+          </div>
+          <div class="county-row">
+            <div><div class="county-name">Humphreys, MS</div><div class="county-sub">47.9% inactive · $82,469</div></div>
+            <div class="score-wrap"><div class="score-track"><div class="score-fill" style="width:1%"></div></div><div class="score-val">0.1</div></div>
+          </div>
+          <div class="county-row">
+            <div><div class="county-name">Oglala Lakota, SD</div><div class="county-sub">Life exp: 56.9 yrs · 0 races</div></div>
+            <div class="score-wrap"><div class="score-track"><div class="score-fill" style="width:1%"></div></div><div class="score-val">0.2</div></div>
+          </div>
+          <div class="county-row">
+            <div><div class="county-name">Kenedy, TX</div><div class="county-sub">59.8% inactive · 0 races</div></div>
+            <div class="score-wrap"><div class="score-track"><div class="score-fill" style="width:1%"></div></div><div class="score-val">0.3</div></div>
+          </div>
+          <div class="county-row">
+            <div><div class="county-name">Wilkinson, MS</div><div class="county-sub">58.2% inactive · 0 races</div></div>
+            <div class="score-wrap"><div class="score-track"><div class="score-fill" style="width:1%"></div></div><div class="score-val">0.4</div></div>
+          </div>
+          <div class="county-row">
+            <div><div class="county-name">Tensas, LA</div><div class="county-sub">56.9% inactive · 0 races</div></div>
+            <div class="score-wrap"><div class="score-track"><div class="score-fill" style="width:2%"></div></div><div class="score-val">0.5</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ─── Method ─── -->
+  <section id="method">
+    <div class="method-layout">
+      <div class="method-left">
+        <div class="hero-wordmark" style="font-size:48px;">Index<br>Construction</div>
+        <div class="hero-sub" style="margin-top:20px;">
+          Five components, one index.<br>
+          All from publicly available,<br>
+          annually updated sources.
+        </div>
+        <div class="intro-text" style="margin-top:24px;">
+          <p>Five data sources. Each one measures a different piece of what it means for a community to have a running culture. We combine them into a single score — 0 to 100 — so every county in America is comparable on one scale.</p>
+        </div>
+      </div>
+      <div class="method-right">
+        <ul class="comp-list">
+          <li class="comp-item">
+            <div>
+              <div class="comp-name">Physical Activity Level</div>
+              <div class="comp-desc">What share of adults in a county never exercise in their free time? We flip the number so a higher score means a more active community.</div>
+            </div>
+            <div class="comp-src">CDC PLACES 2023</div>
+          </li>
+          <li class="comp-item">
+            <div>
+              <div class="comp-name">Race Event Density</div>
+              <div class="comp-desc">How many organized road races, trail runs, and marathons happen in a county relative to its population? People who sign up and show up are the clearest signal of a real running community.</div>
+            </div>
+            <div class="comp-src">RunSignUp API<br>17,810 events</div>
+          </li>
+          <li class="comp-item">
+            <div>
+              <div class="comp-name">Exercise Infrastructure Access</div>
+              <div class="comp-desc">What share of residents actually have a gym, park, or facility nearby to exercise? Access matters — you can't build a habit around something that isn't there.</div>
+            </div>
+            <div class="comp-src">County Health Rankings 2025</div>
+          </li>
+          <li class="comp-item">
+            <div>
+              <div class="comp-name">Fitness Facility Density</div>
+              <div class="comp-desc">How many gyms and fitness centers exist per person in the county? More facilities means more options, lower barriers, and a stronger culture of physical activity.</div>
+            </div>
+            <div class="comp-src">USDA Food Environment Atlas</div>
+          </li>
+          <li class="comp-item">
+            <div>
+              <div class="comp-name">Neighborhood Walkability</div>
+              <div class="comp-desc">Are the streets safe and connected enough to walk and run outside? The EPA scores every neighborhood in the country — we roll those up to the county level.</div>
+            </div>
+            <div class="comp-src">EPA National Walkability Index 2021</div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Applications ─── -->
+  <section style="padding-bottom:0;">
+    <div class="card">
+      <div class="card-label">Applications · Real Estate Platforms</div>
+      <div class="card-body">
+        <div class="card-title">Built for Zillow-scale integration</div>
+        <div class="card-text">RunScore sits alongside Walk Score and school ratings — capturing the one dimension they don't: whether a community has actually built the conditions for an active lifestyle.</div>
+        <div class="card-detail">
+        <hr class="divider">
+        <div class="card-text">All five components come from publicly available, annually updated datasets. No proprietary data, no licensing fees. A platform could publish RunScore for all 3,143 counties and update it every year as CDC, EPA, and RunSignUp data refresh.</div>
+        </div>
+        <div class="tag-row">
+          <span class="badge b-gray">LISTING BADGE</span>
+          <span class="badge b-gray">SEARCH FILTER</span>
+          <span class="badge b-gray">RELOCATION MATCHING</span>
+          <span class="badge b-gray">APPRECIATION SIGNAL</span>
+          <span class="badge b-gray">ANNUAL UPDATE</span>
+          <span class="badge b-gray">NO PROPRIETARY DATA</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /page -->
+
+<!-- ─── Footer ─── -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-col">
+      <h4>Author</h4>
+      <address>
+        Luke Popler<br>
+        Sequoia High School<br>
+        Redwood City, California<br>
+        lukepopler@gmail.com
+      </address>
+    </div>
+    <div class="footer-col">
+      <h4>Publication</h4>
+      <p>
+        April 2026<br>
+        Submitted for academic publication<br>
+        Full paper and dataset available upon request
+      </p>
+    </div>
+    <div class="footer-col">
+      <h4>Data Sources</h4>
+      <p>
+        CDC PLACES 2023<br>
+        RunSignUp API · 17,810 races<br>
+        EPA National Walkability Index<br>
+        County Health Rankings 2025<br>
+        USDA Food Environment Atlas<br>
+        Zillow ZHVI · Feb 2026
+      </p>
+    </div>
+    <div class="footer-col">
+      <h4>Keywords</h4>
+      <p>
+        Running activity<br>
+        Composite index<br>
+        Real estate · County health<br>
+        Home values · Public health<br>
+        3,143 U.S. counties
+      </p>
+    </div>
+  </div>
+  <div class="footer-base">
+    <span>RunScore · Luke Popler · 2026</span>
+    <span>All data from public sources</span>
+  </div>
+</footer>
+
+<script>
+  // ── Scroll reveal ──
+  const revealEls = document.querySelectorAll(
+    '.card, .feat-img, .method-layout, .hero-wordmark, .stat-row > .card'
+  );
+
+  const mobile = () => window.innerWidth <= 700;
+
+  revealEls.forEach(el => {
+    el.classList.add('reveal');
+
+    if (!mobile()) {
+      const parent = el.parentElement;
+      if (parent && parent.classList.contains('stat-row')) {
+        const siblings = Array.from(parent.children);
+        el.style.transitionDelay = `${siblings.indexOf(el) * 0.1}s`;
+      }
+      if (parent && parent.classList.contains('feature')) {
+        const siblings = Array.from(parent.children);
+        el.style.transitionDelay = `${siblings.indexOf(el) * 0.12}s`;
+      }
+    }
+  });
+
+  function updateReveal() {
+    const vh = window.innerHeight;
+    revealEls.forEach(el => {
+      const rect = el.getBoundingClientRect();
+      if (rect.top < vh - 10 && rect.bottom > 0) {
+        el.classList.add('visible');
+      } else {
+        el.classList.remove('visible');
+      }
+    });
+  }
+
+  updateReveal();
+  window.addEventListener('scroll', updateReveal, { passive: true });
+  window.addEventListener('resize', updateReveal, { passive: true });
+
+  // ── Show/hide nav on scroll direction ──
+  const navEl = document.querySelector('nav');
+  let lastScrollY = window.scrollY;
+  let ticking = false;
+
+  function onScroll() {
+    const currentY = window.scrollY;
+    if (window.innerWidth > 700) {
+      navEl.classList.remove('nav-hidden');
+    } else if (currentY <= 0) {
+      navEl.classList.remove('nav-hidden');
+    } else if (currentY > lastScrollY) {
+      navEl.classList.add('nav-hidden');
+    } else {
+      navEl.classList.remove('nav-hidden');
+    }
+    lastScrollY = currentY;
+    ticking = false;
+  }
+
+  window.addEventListener('scroll', () => {
+    if (!ticking) { requestAnimationFrame(onScroll); ticking = true; }
+  }, { passive: true });
+
+  // ── Hamburger / Sidebar ──
+  const hamburger = document.getElementById('hamburger');
+  const sidebar   = document.getElementById('sidebar');
+  const overlay   = document.getElementById('sidebarOverlay');
+
+  function openSidebar() {
+    sidebar.classList.add('open');
+    overlay.classList.add('open');
+    hamburger.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeSidebar() {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('open');
+    hamburger.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  hamburger.addEventListener('click', () => {
+    sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+  });
+  overlay.addEventListener('click', closeSidebar);
+
+  // ── Sidebar health dropdown ──
+  const healthToggle = document.getElementById('sidebarHealthToggle');
+  const healthItems  = document.getElementById('sidebarHealthItems');
+  healthToggle.addEventListener('click', () => {
+    healthToggle.classList.toggle('open');
+    healthItems.classList.toggle('open');
+  });
+
+  // ── Smooth scroll ──
+  document.querySelectorAll('nav a[href^="#"], .sidebar a[href^="#"]').forEach(link => {
+    link.addEventListener('click', e => {
+      e.preventDefault();
+      const id = link.getAttribute('href');
+      if (id === '#') { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+      const target = document.querySelector(id);
+      if (!target) return;
+      const navH = document.querySelector('nav').offsetHeight;
+      const top = target.getBoundingClientRect().top + window.scrollY - navH - 20;
+      window.scrollTo({ top, behavior: 'smooth' });
+    });
+  });
+
+  // ── Lightbox ──
+  const lbOverlay = document.createElement('div');
+  lbOverlay.className = 'lb-overlay';
+  lbOverlay.innerHTML = `
+    <div class="lb-panel" id="lb-panel">
+      <div class="lb-img-wrap"><img id="lb-img" src="" alt=""></div>
+      <div class="lb-side" id="lb-side">
+        <button class="lb-close" id="lb-close" aria-label="Close">&#x2715;</button>
+        <div class="lb-side-inner" id="lb-content"></div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(lbOverlay);
+
+  function openLb(imgEl, cardEl) {
+    // Set image
+    document.getElementById('lb-img').src = imgEl.src;
+    document.getElementById('lb-img').alt = imgEl.alt;
+
+    // Clone card content into side panel
+    const content = document.getElementById('lb-content');
+    content.innerHTML = '';
+
+    const label = cardEl.querySelector('.card-label');
+    if (label) {
+      const lbl = document.createElement('div');
+      lbl.className = 'lb-lbl';
+      lbl.textContent = label.textContent.replace('↗','').trim();
+      content.appendChild(lbl);
+    }
+
+    const body = cardEl.querySelector('.card-body');
+    if (body) {
+      content.appendChild(body.cloneNode(true));
+    }
+
+    lbOverlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    // Trigger transition
+    requestAnimationFrame(() => requestAnimationFrame(() => lbOverlay.classList.add('visible')));
+  }
+
+  function closeLb() {
+    lbOverlay.classList.remove('visible');
+    lbOverlay.addEventListener('transitionend', () => {
+      lbOverlay.classList.remove('open');
+      document.body.style.overflow = '';
+    }, { once: true });
+  }
+
+  // Attach click to each feat-img
+  document.querySelectorAll('.feat-img').forEach(wrap => {
+    wrap.addEventListener('click', () => {
+      const img = wrap.querySelector('img');
+      const feature = wrap.closest('.feature');
+      const card = feature ? feature.querySelector('.card') : null;
+      if (img && card) openLb(img, card);
+    });
+  });
+
+  document.getElementById('lb-close').addEventListener('click', closeLb);
+
+  lbOverlay.addEventListener('click', e => {
+    if (e.target === lbOverlay) closeLb();
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeLb();
+  });
+</script>
+
+</body>
+</html>

@@ -15,18 +15,26 @@ body {
   max-width: 640px;
 }
 
+.projects-desktop {
+  display: none;
+}
+
 @media (max-width: 939px) {
   .layout {
     display: flex;
     flex-direction: column;
   }
 
-  .col-side {
+  .nav-top {
     order: 1;
   }
 
-  .col-main {
+  .col-side {
     order: 2;
+  }
+
+  .col-main {
+    order: 3;
   }
 }
 
@@ -34,12 +42,32 @@ body {
   .layout {
     display: grid;
     grid-template-columns: 640px 640px;
+    grid-template-areas:
+      "nav  side"
+      "main side";
     gap: 40px;
     align-items: start;
   }
 
+  .nav-top {
+    grid-area: nav;
+  }
+
   .col-main {
+    grid-area: main;
     max-width: none;
+  }
+
+  .col-side {
+    grid-area: side;
+  }
+
+  .projects-desktop {
+    display: block;
+  }
+
+  .projects-mobile {
+    display: none;
   }
 }
 

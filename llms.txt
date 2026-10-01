@@ -1,0 +1,17 @@
+# Luke Popler
+
+> IB Diploma Candidate, ASB Director of Technology, Cross Country/Track captain, and 3D printing club founder at Sequoia High School.
+
+Personal site covering Luke's work, activities, and projects.
+
+## Pages
+
+- [Home](https://lukepopler.me/): Mathnasium tutoring, 3D Printing and Modeling club, Cross Country & Track, development tools, RunScore, RecovHR, other software projects, and music.
+- [RecovHR](https://lukepopler.me/recovhr): A heart-rate-reserve algorithm for individualized interval recovery.
+- [RunScore](https://lukepopler.me/runscore): A composite index scoring U.S. counties on the strength of their running culture.
+- [Multivariable Calculus](https://lukepopler.me/multi): Class page with syllabus and classwork.
+- [IB History](https://lukepopler.me/IBhistory): Class page with the Internal Assessment.
+
+## Contact
+
+- Email: lukepopler@gmail.com

@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="stylesheet" href="../style.css">
   <style>
-    .big-btn { display: inline-block; font-size: 20px; padding: 12px 18px; margin: 6px 0; }
+    .big-btn { display: inline-block; font-size: 20px; padding: 12px 18px; margin: 6px 8px 6px 0; }
     .wifi td { padding: 2px 12px 2px 0; }
     .wifi code { font-size: 18px; }
   </style>
@@ -19,27 +19,38 @@
       <h1>Receipt Polaroid</h1>
       <p>Take a picture and it prints out on the receipt printer.</p>
 
-      <h2>1. Connect to the WiFi</h2>
-      <hr>
-      <p>The printer only works on Jay's WiFi. Join it first.</p>
-      <table class="wifi">
-        <tr><td>Network</td><td><code>New Arroyo</code></td></tr>
-        <tr><td>Password</td><td><code>Sonya_jay</code></td></tr>
-      </table>
-      <p><button id="copyBtn" class="big-btn">Copy password</button> <span id="copyMsg"></span></p>
-      <p>Then open Settings, tap WiFi, pick New Arroyo, and paste the password.</p>
-      <p>Or have a friend scan this with their camera to join:</p>
-      <p><img src="wifi-qr.png" alt="QR code to join the New Arroyo WiFi" width="200" height="200"></p>
+      <div id="ask">
+        <h2>Are you on New Arroyo?</h2>
+        <hr>
+        <p>Check your WiFi. The printer only works on Jay's WiFi, New Arroyo.</p>
+        <p>
+          <a class="big-btn" href="http://192.168.1.178/#camera">Yes</a>
+          <button id="noBtn" class="big-btn">No</button>
+        </p>
+      </div>
 
-      <h2>2. Open the printer</h2>
-      <hr>
-      <p>Once you're on the WiFi, tap this:</p>
-      <p><a class="big-btn" href="http://192.168.1.178/#camera">Open the printer</a></p>
-      <p>If it doesn't load, you aren't on New Arroyo yet. Go back to step 1.</p>
-      <p>Your browser might say the page is "Not Secure." That's fine, it's just the printer on Jay's WiFi.</p>
+      <div id="join" hidden>
+        <h2>Join the WiFi</h2>
+        <hr>
+        <table class="wifi">
+          <tr><td>Network</td><td><code>New Arroyo</code></td></tr>
+          <tr><td>Password</td><td><code>Sonya_jay</code></td></tr>
+        </table>
+        <p><button id="copyBtn" class="big-btn">Copy password</button> <span id="copyMsg"></span></p>
+        <p>Open Settings, tap WiFi, pick New Arroyo, and paste the password.</p>
+        <p>Or have a friend scan this with their camera to join:</p>
+        <p><img src="wifi-qr.png" alt="QR code to join the New Arroyo WiFi" width="200" height="200"></p>
+        <p>Once you're on it:</p>
+        <p><a class="big-btn" href="http://192.168.1.178/#camera">Open the printer</a></p>
+        <p>If it doesn't load, you aren't on New Arroyo yet.</p>
+      </div>
     </div>
   </div>
   <script>
+    document.getElementById('noBtn').addEventListener('click', () => {
+      document.getElementById('ask').hidden = true;
+      document.getElementById('join').hidden = false;
+    });
     document.getElementById('copyBtn').addEventListener('click', async () => {
       const msg = document.getElementById('copyMsg');
       try {

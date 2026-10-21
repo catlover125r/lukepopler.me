@@ -191,14 +191,43 @@
       background: var(--soft); cursor: zoom-in;
     }
     .photo img { width: 100%; height: auto; display: block; }
-    .photo .cap { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-    .photo .cap .btn { height: 38px; font-size: 14px; padding: 0 14px; }
-    .ocr {
-      display: none; margin-top: 12px; background: var(--soft); border-radius: var(--radius);
-      padding: 18px 20px; font-family: var(--serif); font-size: 16px; line-height: 1.55; white-space: pre-wrap;
+    .written { margin-top: 36px; border-top: 1.5px solid var(--ink); padding-top: 8px; }
+    .written section { margin-top: 26px; }
+    .written .head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .written h3 { font-family: var(--serif); font-weight: normal; font-size: 28px; margin: 0; }
+    .written .serves { font-size: 13px; color: var(--muted); text-align: right; }
+    .ing { list-style: none; margin: 0; padding: 0; }
+    .ing li {
+      display: flex; gap: 14px; align-items: flex-start; padding: 11px 0; border-bottom: 1px solid var(--line);
+      font-size: 17px; line-height: 1.4; cursor: pointer; user-select: none;
     }
-    .ocr.show { display: block; }
-    .ocr small { display: block; font-family: var(--sans); font-size: 12px; color: var(--muted); margin-bottom: 10px; white-space: normal; }
+    .ing li::before {
+      content: ""; flex: none; width: 20px; height: 20px; margin-top: 2px; border-radius: 50%;
+      border: 1.5px solid var(--ink); transition: background .15s;
+    }
+    .ing li.done { color: #9a9a9a; text-decoration: line-through; }
+    .ing li.done::before {
+      background: var(--ink) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12l4 4 8-8'/%3E%3C/svg%3E") center / 14px no-repeat;
+    }
+    .ing li.grp {
+      cursor: default; border-bottom: 0; padding: 18px 0 2px; font-family: var(--sans); font-size: 12px;
+      letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
+    }
+    .ing li.grp::before { display: none; }
+    .steps { list-style: none; margin: 0; padding: 0; counter-reset: step; }
+    .steps li {
+      counter-increment: step; display: flex; gap: 16px; align-items: flex-start; padding: 12px 0;
+      font-size: 17px; line-height: 1.55;
+    }
+    .steps li::before {
+      content: counter(step); flex: none; width: 32px; height: 32px; border-radius: 50%;
+      background: var(--ink); color: var(--paper); font-family: var(--sans); font-size: 14px; font-weight: 600;
+      display: flex; align-items: center; justify-content: center; margin-top: -1px;
+    }
+    .written .fyi {
+      margin: 22px 0 0; padding: 14px 16px; background: var(--soft); border-radius: 12px;
+      font-size: 14px; line-height: 1.5; color: #333;
+    }
     .nophoto { margin-top: 28px; padding: 40px 20px; text-align: center; color: var(--muted); border: 1px dashed #ccc; border-radius: var(--radius); }
 
     .toast {
@@ -227,10 +256,11 @@
     }
 
     @media print {
-      header.top, .toolbar, main, footer, .vbar, .photo .cap, .toast { display: none !important; }
+      header.top, .toolbar, main, footer, .vbar, .toast { display: none !important; }
       .view { position: static; display: block !important; overflow: visible; }
       .recipe { padding: 0; }
-      .ocr.show { background: none; padding: 0; }
+      .written { break-before: page; }
+      .steps li, .ing li { break-inside: avoid; }
       .photo { break-inside: avoid; }
     }
   </style>
@@ -309,7 +339,8 @@
         state.all = data.map((r) => ({
           ...r,
           _title: norm(r.title),
-          _body: norm([r.cats.join(' '), r.notes.join(' '), r.photos.map((p) => p.text).join(' ')].join(' ')),
+          _text: [...r.notes, ...writtenText(r), ...r.photos.map((p) => p.text)].join(' \n '),
+          _body: norm([r.cats.join(' '), r.notes.join(' '), writtenText(r).join(' '), r.photos.map((p) => p.text).join(' ')].join(' ')),
         }));
         $('count').textContent = `${data.length} recipes`;
         try {
@@ -334,6 +365,10 @@
         cats.map((c) => chip(c, esc(c), counts[c])).join('');
     }
 
+    function writtenText(r) {
+      return r.recipe ? [...(r.recipe.ingredients || []), ...(r.recipe.method || [])].map((x) => x.replace(/^# /, '')) : [];
+    }
+
     function terms() { return norm(state.q).split(/\s+/).filter(Boolean); }
 
     function filter() {
@@ -356,7 +391,7 @@
     function snippet(r) {
       const t = terms();
       if (!t.length || r._titleHit) return '';
-      const text = [...r.notes, ...r.photos.map((p) => p.text)].join(' \n ').replace(/\s+/g, ' ');
+      const text = r._text.replace(/\s+/g, ' ');
       const lower = norm(text);
       const i = lower.indexOf(t[0]);
       if (i < 0) return '';
@@ -400,11 +435,6 @@
         ? r.photos.map((p, i) => `
           <figure class="photo">
             <a class="img" href="img/${p.id}.jpg" target="_blank" rel="noopener"><img src="img/${p.id}.jpg" alt="${esc(r.title)}, page ${i + 1}" loading="${i ? 'lazy' : 'eager'}"></a>
-            ${p.text ? `<div class="cap">
-              <button class="btn" type="button" data-toggle="${i}">Show text version</button>
-              <button class="btn" type="button" data-copy="${i}">Copy text</button>
-            </div>
-            <div class="ocr" id="ocr-${i}"><small>Read automatically from the photo, so it may have a few mistakes. The photo is the original.</small>${esc(p.text)}</div>` : ''}
           </figure>`).join('')
         : `<div class="nophoto">No photo was saved with this one in the app.</div>`;
       $('recipe').innerHTML = `
@@ -416,7 +446,8 @@
         <p class="added">Saved ${fmtDate(r.added)}</p>
         ${r.notes.length ? `<div class="block"><h4>Notes</h4>${r.notes.map((n) => `<p class="note">${esc(n)}</p>`).join('')}</div>` : ''}
         ${r.links.length ? `<div class="block links"><h4>Original recipe</h4>${r.links.map((l) => `<a class="btn" href="${esc(l)}" target="_blank" rel="noopener">${esc(l.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, ''))} ↗</a>`).join('')}</div>` : ''}
-        ${photos}`;
+        ${photos}
+        ${written(r.recipe)}`;
       document.title = `${r.title} · Mom's Recipes`;
       const v = $('view');
       v.classList.add('open');
@@ -424,6 +455,24 @@
       document.body.classList.add('lock');
       const nav = state.list.length && state.list.includes(r) ? state.list : state.all;
       $('prev').disabled = $('next').disabled = nav.length < 2;
+    }
+
+    function written(w) {
+      if (!w) return '';
+      const ing = w.ingredients || [];
+      const steps = w.method || [];
+      if (!ing.length && !steps.length && !w.note) return '';
+      return `<div class="written">
+        ${ing.length ? `<section>
+          <div class="head"><h3>Ingredients</h3>${w.serves ? `<span class="serves">${esc(w.serves)}</span>` : ''}</div>
+          <ul class="ing">${ing.map((x) => x.startsWith('# ') ? `<li class="grp">${esc(x.slice(2))}</li>` : `<li>${esc(x)}</li>`).join('')}</ul>
+        </section>` : ''}
+        ${steps.length ? `<section>
+          <div class="head"><h3>Method</h3></div>
+          <ol class="steps">${steps.map((x) => `<li><span>${esc(x)}</span></li>`).join('')}</ol>
+        </section>` : ''}
+        ${w.note ? `<p class="fyi">${esc(w.note)}</p>` : ''}
+      </div>`;
     }
 
     function closeRecipe() {
@@ -518,19 +567,9 @@
         window.scrollTo({ top: 0 });
         return;
       }
-      const tog = e.target.closest('[data-toggle]');
-      if (tog) {
-        const box = $('ocr-' + tog.dataset.toggle);
-        const on = box.classList.toggle('show');
-        tog.textContent = on ? 'Hide text version' : 'Show text version';
-        return;
-      }
-      const cp = e.target.closest('[data-copy]');
-      if (cp && state.current) {
-        const text = state.current.photos[+cp.dataset.copy].text;
-        navigator.clipboard.writeText(`${state.current.title}\n\n${text}`)
-          .then(() => toast('Copied'), () => toast('Could not copy'));
-      }
+      // Tap an ingredient to cross it off while cooking
+      const li = e.target.closest('.ing li:not(.grp)');
+      if (li) li.classList.toggle('done');
     });
 
     document.addEventListener('keydown', (e) => {

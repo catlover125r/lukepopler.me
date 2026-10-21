@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cross Country &amp; Track · Luke Popler</title>
+  <meta name="description" content="Heatmap of every run Luke Popler has recorded on his COROS watch.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: #2b2b2b;
+    }
+
+    #map {
+      position: fixed;
+      inset: 0;
+      background: #2b2b2b;
+    }
+
+    .leaflet-container {
+      font-family: Georgia, "Times New Roman", Times, serif;
+    }
+
+    .card {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 1000;
+      max-width: calc(100% - 32px);
+      box-sizing: border-box;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.94);
+      color: #000;
+      font-family: Georgia, "Times New Roman", Times, serif;
+    }
+
+    .card h1 {
+      font-size: 1.25em;
+      margin: 0 0 2px;
+    }
+
+    .card p {
+      margin: 0;
+      font-size: 0.9em;
+    }
+
+    .card a,
+    .card a:visited {
+      color: #000;
+    }
+
+    .ramp {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+      font-size: 0.8em;
+    }
+
+    .ramp span.bar {
+      width: 120px;
+      height: 8px;
+      background: linear-gradient(90deg, #fc4c02, #fff);
+      outline: 1px solid #999;
+    }
+
+    .leaflet-control-attribution {
+      font-size: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <div class="card">
+    <p><a href="/">Luke Popler</a></p>
+    <h1>Cross Country &amp; Track</h1>
+    <p id="stats">Loading runs…</p>
+    <div class="ramp">fewer runs <span class="bar"></span> more</div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script>
+    const ORANGE = [252, 76, 2];
+    const WHITE = [255, 255, 255];
+    const LUT_MIN = 8, LUT_MAX = 19;
+
+    const map = L.map('map', {
+      zoomControl: false,
+      minZoom: 3,
+      maxZoom: 18,
+      worldCopyJump: false
+    });
+
+    L.control.zoom({ position: 'topright' }).addTo(map);
+
+    map.createPane('heat').style.zIndex = 450;
+    map.createPane('labels').style.zIndex = 460;
+    map.getPane('labels').style.pointerEvents = 'none';
+
+    const esri = 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/';
+    L.tileLayer(esri + 'World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+      maxNativeZoom: 16,
+      maxZoom: 18,
+      attribution: 'Tiles &copy; Esri, HERE, Garmin, &copy; OpenStreetMap contributors'
+    }).addTo(map);
+    L.tileLayer(esri + 'World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+      maxNativeZoom: 16,
+      maxZoom: 18,
+      pane: 'labels',
+      opacity: 0.8
+    }).addTo(map);
+
+    // 256-entry palette, packed as little-endian RGBA for ImageData
+    function packed(alpha) {
+      const p = new Uint32Array(256);
+      for (let i = 0; i < 256; i++) {
+        const t = i / 255;
+        const r = Math.round(ORANGE[0] + (WHITE[0] - ORANGE[0]) * t);
+        const g = Math.round(ORANGE[1] + (WHITE[1] - ORANGE[1]) * t);
+        const b = Math.round(ORANGE[2] + (WHITE[2] - ORANGE[2]) * t);
+        p[i] = (alpha << 24) | (b << 16) | (g << 8) | r;
+      }
+      return p;
+    }
+    const PAL = packed(255);
+    const PAL_EDGE = packed(130);
+
+    // Canvas layer that counts how many different runs cross each pixel.
+    // Built on L.Renderer so Leaflet handles panning and zoom animation.
+    const Heat = L.Renderer.extend({
+      options: { padding: 0.25, pane: 'heat' },
+
+      setData(data) {
+        this._data = data;
+        if (this._map) this._update();
+      },
+
+      _initContainer() {
+        this._container = document.createElement('canvas');
+        this._ctx = this._container.getContext('2d');
+      },
+
+      _destroyContainer() {
+        L.DomUtil.remove(this._container);
+        delete this._ctx;
+      },
+
+      _update() {
+        if (this._map._animatingZoom && this._bounds) return;
+        L.Renderer.prototype._update.call(this);
+        const b = this._bounds, size = b.getSize();
+        const dpr = window.devicePixelRatio || 1;
+        const c = this._container;
+        L.DomUtil.setPosition(c, b.min);
+        c.width = Math.round(dpr * size.x);
+        c.height = Math.round(dpr * size.y);
+        c.style.width = size.x + 'px';
+        c.style.height = size.y + 'px';
+        if (this._data) this._draw(dpr);
+      },
+
+      _draw(dpr) {
+        const d = this._data, map = this._map;
+        const W = this._container.width, H = this._container.height;
+        const z = map.getZoom();
+        const s = 256 * Math.pow(2, z) * dpr / d.q;
+        const origin = map.getPixelOrigin().add(this._bounds.min);
+        const ox = origin.x * dpr, oy = origin.y * dpr;
+
+        // view in quantized world units, for culling
+        const vx0 = ox / s, vy0 = oy / s, vx1 = (ox + W) / s, vy1 = (oy + H) / s;
+
+        const cnt = new Uint16Array(W * H);
+        const last = new Uint16Array(W * H);
+
+        for (let ti = 0; ti < d.tracks.length; ti++) {
+          const id = ti + 1;
+          const segs = d.tracks[ti];
+          for (const seg of segs) {
+            if (seg.x1 < vx0 || seg.x0 > vx1 || seg.y1 < vy0 || seg.y0 > vy1) continue;
+            const p = seg.p;
+            let ax = p[0] * s - ox, ay = p[1] * s - oy;
+            for (let k = 2; k < p.length; k += 2) {
+              const bx = p[k] * s - ox, by = p[k + 1] * s - oy;
+              // skip segments entirely off one side of the canvas
+              if (!((ax < 0 && bx < 0) || (ay < 0 && by < 0) || (ax >= W && bx >= W) || (ay >= H && by >= H))) {
+                let x0 = ax, y0 = ay, x1 = bx, y1 = by;
+                // Liang-Barsky clip to the canvas
+                let t0 = 0, t1 = 1;
+                const dx = x1 - x0, dy = y1 - y0;
+                const pp = [-dx, dx, -dy, dy], qq = [x0, W - 1e-6 - x0, y0, H - 1e-6 - y0];
+                let keep = true;
+                for (let e = 0; e < 4; e++) {
+                  if (pp[e] === 0) { if (qq[e] < 0) { keep = false; break; } }
+                  else {
+                    const r = qq[e] / pp[e];
+                    if (pp[e] < 0) { if (r > t1) { keep = false; break; } if (r > t0) t0 = r; }
+                    else { if (r < t0) { keep = false; break; } if (r < t1) t1 = r; }
+                  }
+                }
+                if (keep) {
+                  const sx = x0 + dx * t0, sy = y0 + dy * t0;
+                  const ex = x0 + dx * t1, ey = y0 + dy * t1;
+                  const ddx = ex - sx, ddy = ey - sy;
+                  const n = Math.max(1, Math.ceil(Math.max(Math.abs(ddx), Math.abs(ddy))));
+                  for (let j = 0; j < n; j++) {
+                    const px = (sx + ddx * j / n) | 0, py = (sy + ddy * j / n) | 0;
+                    if (px < 0 || py < 0 || px >= W || py >= H) continue;
+                    const i = py * W + px;
+                    if (last[i] !== id) { last[i] = id; cnt[i]++; }
+                  }
+                }
+              }
+              ax = bx; ay = by;
+            }
+          }
+        }
+
+        const ez = Math.min(LUT_MAX, Math.max(LUT_MIN, Math.round(z + Math.log2(dpr))));
+        const lut = d.luts[ez];
+        const toIdx = new Uint8Array(65536);
+        for (let c = 1; c < 65536; c++) {
+          toIdx[c] = c - 1 < lut.length ? Math.round(lut[c - 1] * 255) : 255;
+        }
+
+        const img = this._ctx.createImageData(W, H);
+        const out = new Uint32Array(img.data.buffer);
+        for (let y = 0; y < H; y++) {
+          const row = y * W;
+          for (let x = 0; x < W; x++) {
+            const i = row + x;
+            const c = cnt[i];
+            if (c) { out[i] = PAL[toIdx[c]]; continue; }
+            // soft one-pixel edge from the strongest neighbor
+            let m = 0;
+            if (x > 0 && cnt[i - 1] > m) m = cnt[i - 1];
+            if (x < W - 1 && cnt[i + 1] > m) m = cnt[i + 1];
+            if (y > 0 && cnt[i - W] > m) m = cnt[i - W];
+            if (y < H - 1 && cnt[i + W] > m) m = cnt[i + W];
+            if (m) out[i] = PAL_EDGE[toIdx[m]];
+          }
+        }
+        this._ctx.putImageData(img, 0, 0);
+      }
+    });
+
+    const core = L.latLngBounds([37.452, -122.300], [37.535, -122.190]);
+    map.fitBounds(core);
+
+    const heat = new Heat();
+    heat.addTo(map);
+
+    fetch('tracks.json')
+      .then(r => r.json())
+      .then(raw => {
+        // deltas -> absolute coordinates, plus a bounding box per segment
+        raw.tracks = raw.tracks.map(segs => segs.map(dl => {
+          const p = new Float64Array(dl.length);
+          let x = 0, y = 0, x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+          for (let k = 0; k < dl.length; k += 2) {
+            x += dl[k]; y += dl[k + 1];
+            p[k] = x; p[k + 1] = y;
+            if (x < x0) x0 = x; if (x > x1) x1 = x;
+            if (y < y0) y0 = y; if (y > y1) y1 = y;
+          }
+          return { p, x0, y0, x1, y1 };
+        }));
+        document.getElementById('stats').textContent =
+          raw.runs.toLocaleString() + ' runs · ' + raw.miles.toLocaleString() + ' miles';
+        heat.setData(raw);
+      })
+      .catch(() => {
+        document.getElementById('stats').textContent = 'Could not load runs.';
+      });
+  </script>
+</body>
+</html>

@@ -33,10 +33,6 @@
 
     /* Header */
     header.top { padding-top: 56px; padding-bottom: 20px; }
-    .eyebrow {
-      font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
-      margin: 0 0 10px;
-    }
     h1 {
       font-family: var(--serif); font-weight: normal; font-size: clamp(40px, 7vw, 68px);
       line-height: 1; margin: 0; letter-spacing: -.01em;
@@ -235,7 +231,6 @@
 </head>
 <body>
   <header class="top wrap">
-    <p class="eyebrow">The family cookbook</p>
     <h1>Mom's Recipes</h1>
     <p class="count" id="count"></p>
   </header>
@@ -310,7 +305,7 @@
           _title: norm(r.title),
           _body: norm([r.cats.join(' '), r.notes.join(' '), r.photos.map((p) => p.text).join(' ')].join(' ')),
         }));
-        $('count').textContent = `${data.length} recipes, all in one place.`;
+        $('count').textContent = `${data.length} recipes`;
         try {
           const saved = JSON.parse(localStorage.getItem('momrecipe') || '{}');
           if (saved.sort) { state.sort = saved.sort; $('sort').value = saved.sort; }

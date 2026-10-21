@@ -248,8 +248,8 @@
       }
     });
 
-    const core = L.latLngBounds([37.452, -122.300], [37.535, -122.190]);
-    map.fitBounds(core);
+    // start centered on San Carlos + Redwood City
+    map.setView([37.4935, -122.245], window.innerWidth < 700 ? 12 : 13);
 
     const heat = new Heat();
     heat.addTo(map);
